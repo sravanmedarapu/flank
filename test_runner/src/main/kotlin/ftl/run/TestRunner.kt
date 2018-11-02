@@ -22,10 +22,14 @@ import ftl.gc.GcToolResults
 import ftl.json.MatrixMap
 import ftl.json.SavedMatrix
 import ftl.reports.util.ReportManager
-import ftl.util.ArtifactRegex
-import ftl.util.MatrixState
-import ftl.util.StopWatch
-import ftl.util.Utils
+import ftl.util.*
+import ftl.util.MatrixState.CANCELLED
+import ftl.util.MatrixState.ERROR
+import ftl.util.MatrixState.FINISHED
+import ftl.util.MatrixState.INCOMPATIBLE_ARCHITECTURE
+import ftl.util.MatrixState.INCOMPATIBLE_ENVIRONMENT
+import ftl.util.MatrixState.INVALID
+import ftl.util.MatrixState.UNSUPPORTED_ENVIRONMENT
 import ftl.util.Utils.fatalError
 import kotlinx.coroutines.experimental.Deferred
 import kotlinx.coroutines.experimental.async
@@ -335,8 +339,9 @@ object TestRunner {
         fetchArtifacts(matrixMap)
 
         // Must generate reports *after* fetching xml artifacts since reports require xml
-        val testsSuccessful = ReportManager.generate(matrixMap, config)
-        if (!testsSuccessful) System.exit(1)
+        ReportManager.generate(matrixMap, config)
+        var eixtCode = getExitCode(matrixMap)
+        System.exit(eixtCode)
     }
 
     // used to cancel and update results from an async run
@@ -355,8 +360,40 @@ object TestRunner {
             pollMatrices(matrixMap, config)
             fetchArtifacts(matrixMap)
 
-            val testsSuccessful = ReportManager.generate(matrixMap, config)
-            if (!testsSuccessful) System.exit(1)
+            ReportManager.generate(matrixMap, config)
+            var eixtCode = getExitCode(matrixMap)
+            System.exit(eixtCode)
         }
+    }
+
+    /**
+     * exit code 0 - all tests passed
+     * exit code 1 - at least test failed & no FTL errors
+     * exit code 2 - at least one infrastructure failure or other FTL error
+     */
+    private fun getExitCode(matrices: MatrixMap): Int {
+        val savedMatrices = matrices.map.values
+        var exitCode = 0
+        savedMatrices.forEach { matrix ->
+            when (matrix.state) {
+                ERROR,
+                UNSUPPORTED_ENVIRONMENT,
+                INCOMPATIBLE_ENVIRONMENT,
+                INCOMPATIBLE_ARCHITECTURE,
+                CANCELLED,
+                INVALID -> {
+                    return 2
+                }
+                FINISHED -> {
+                    if (matrix.outcome != Outcome.success) {
+                        exitCode = 1
+                        if (matrix.outcome != Outcome.failure) {
+                            return 2
+                        }
+                    }
+                }
+            }
+        }
+        return exitCode
     }
 }

@@ -74,12 +74,14 @@ class SavedMatrix(matrix: TestMatrix) {
     }
 
     private fun updateOutcome(stepOutcome: Outcome) {
-        outcome = stepOutcome.summary
+        if (stepOutcome.summary != success) {
+            outcome = stepOutcome.summary
+        }
         when (outcome) {
-            failure -> outcomeAdditionalDetails = stepOutcome.failureDetail.keys.joinToString(", ")
-            success -> outcomeAdditionalDetails = stepOutcome.successDetail.keys.joinToString(", ")
-            inconclusive -> outcomeAdditionalDetails = stepOutcome.inconclusiveDetail.keys.joinToString(", ")
-            skipped -> outcomeAdditionalDetails = stepOutcome.skippedDetail.keys.joinToString(", ")
+            failure -> outcomeAdditionalDetails = stepOutcome.failureDetail?.keys?.joinToString(",") ?: ""
+            success -> outcomeAdditionalDetails = stepOutcome.successDetail?.keys?.joinToString(",") ?: ""
+            inconclusive -> outcomeAdditionalDetails = stepOutcome.inconclusiveDetail?.keys?.joinToString(",") ?: ""
+            skipped -> outcomeAdditionalDetails = stepOutcome.skippedDetail?.keys?.joinToString(",") ?: ""
         }
     }
 

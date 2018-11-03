@@ -20,7 +20,7 @@ import org.junit.runner.RunWith
 class SavedMatrixTest {
 
     // use -1 step id to get a failure outcome from the mock server
-    private fun createStepExecution(stepId: Int, deviceModel: String = "shamu"): TestExecution {
+    fun createStepExecution(stepId: Int, deviceModel: String = "shamu"): TestExecution {
         val toolResultsStep = ToolResultsStep()
         toolResultsStep.projectId = "1"
         toolResultsStep.historyId = "2"
@@ -40,7 +40,7 @@ class SavedMatrixTest {
     private val mockBucket = "mockBucket"
     private val mockGcsPath = "$mockBucket/$mockFileName"
 
-    private fun createResultsStorage(): ResultStorage {
+    fun createResultsStorage(): ResultStorage {
         val googleCloudStorage = GoogleCloudStorage()
         googleCloudStorage.gcsPath = mockGcsPath
 

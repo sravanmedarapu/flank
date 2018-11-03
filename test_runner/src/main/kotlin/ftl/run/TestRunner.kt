@@ -22,21 +22,13 @@ import ftl.gc.GcToolResults
 import ftl.json.MatrixMap
 import ftl.json.SavedMatrix
 import ftl.reports.util.ReportManager
-import ftl.util.*
-import ftl.util.MatrixState.CANCELLED
-import ftl.util.MatrixState.ERROR
-import ftl.util.MatrixState.FINISHED
-import ftl.util.MatrixState.INCOMPATIBLE_ARCHITECTURE
-import ftl.util.MatrixState.INCOMPATIBLE_ENVIRONMENT
-import ftl.util.MatrixState.INVALID
-import ftl.util.MatrixState.UNSUPPORTED_ENVIRONMENT
+import ftl.util.ArtifactRegex
+import ftl.util.MatrixState
+import ftl.util.StopWatch
+import ftl.util.Utils
 import ftl.util.Utils.fatalError
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import ftl.util.Utils.getExitCode
+import kotlinx.coroutines.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -362,39 +354,8 @@ object TestRunner {
             fetchArtifacts(matrixMap)
 
             ReportManager.generate(matrixMap, config)
-            var eixtCode = getExitCode(matrixMap)
-            System.exit(eixtCode)
+            var exitCode = getExitCode(matrixMap)
+            System.exit(exitCode)
         }
-    }
-
-    /**
-     * exit code 0 - all tests passed
-     * exit code 1 - at least test failed & no FTL errors
-     * exit code 2 - at least one infrastructure failure or other FTL error
-     */
-    private fun getExitCode(matrices: MatrixMap): Int {
-        val savedMatrices = matrices.map.values
-        var exitCode = 0
-        savedMatrices.forEach { matrix ->
-            when (matrix.state) {
-                ERROR,
-                UNSUPPORTED_ENVIRONMENT,
-                INCOMPATIBLE_ENVIRONMENT,
-                INCOMPATIBLE_ARCHITECTURE,
-                CANCELLED,
-                INVALID -> {
-                    return 2
-                }
-                FINISHED -> {
-                    if (matrix.outcome != Outcome.success) {
-                        exitCode = 1
-                        if (matrix.outcome != Outcome.failure) {
-                            return 2
-                        }
-                    }
-                }
-            }
-        }
-        return exitCode
     }
 }
